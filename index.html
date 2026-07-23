@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glean Agent — Web UI</title>
+  <style>
+    :root {
+      --bg: #f7f7f8;
+      --panel: #ffffff;
+      --border: #e3e3e8;
+      --text: #1c1c1e;
+      --muted: #6b7280;
+      --accent: #343cff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #131316;
+        --panel: #1c1c20;
+        --border: #2c2c33;
+        --text: #f2f2f5;
+        --muted: #9a9aa5;
+        --accent: #7c82ff;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    header h1 { font-size: 15px; font-weight: 600; margin: 0; }
+    header .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+    main { flex: 1; min-height: 0; display: flex; }
+    /* The SDK renders its own full-height chat UI into this element. */
+    #glean-chat { flex: 1; min-height: 0; height: 100%; }
+    #status {
+      margin: auto;
+      max-width: 460px;
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    #status code {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="dot"></span>
+    <h1>Company Assistant</h1>
+  </header>
+  <main>
+    <div id="glean-chat"></div>
+    <div id="status" hidden></div>
+  </main>
+
+  <!--
+    Glean Web SDK loader.
+
+    ⚠️ CONFIRM THIS URL: the exact CDN path for your deployment is shown in your
+    Glean developer portal (Admin → Platform → Web SDK / Embedded chat). It is
+    typically served from your Glean backend host, e.g.:
+        https://<your-org>-be.glean.com/embedded-search-latest.min.js
+    Replace the src below with the value from your portal.
+  -->
+  <script
+    src="https://YOUR-ORG-be.glean.com/embedded-search-latest.min.js"
+    onerror="showStatus('Could not load the Glean Web SDK script. Update the &lt;script src&gt; in index.html with the CDN URL from your Glean developer portal.')"
+  ></script>
+
+  <script>
+    // ─────────────────────────────────────────────────────────────
+    // CONFIG — replace these with your own values
+    // ─────────────────────────────────────────────────────────────
+    const CONFIG = {
+      // Your Glean backend host (found in the developer portal).
+      backend: 'https://YOUR-ORG-be.glean.com/',
+
+      // The agent to run. Use `agentId` for new/migrated agents.
+      // (Older "Apps" used `applicationId`; agentId is the current field.)
+      agentId: 'YOUR_AGENT_ID',
+    };
+
+    function showStatus(msg) {
+      const el = document.getElementById('status');
+      el.hidden = false;
+      el.innerHTML = msg;
+      document.getElementById('glean-chat').hidden = true;
+    }
+
+    function init() {
+      if (typeof GleanWebSDK === 'undefined') {
+        showStatus('GleanWebSDK global not found. Check that the SDK &lt;script&gt; loaded.');
+        return;
+      }
+
+      // Default SSO: Glean handles login via your configured SSO/OIDC.
+      // Every result and answer is scoped to what the signed-in user can see.
+      GleanWebSDK.renderChat(document.getElementById('glean-chat'), {
+        backend: CONFIG.backend,
+        agentId: CONFIG.agentId,
+
+        // ── To use server-to-server token auth instead of SSO, remove the
+        //    SSO default and add the following (see README.md):
+        //
+        // authMethod: 'token',
+        // authToken: await getGleanToken(),           // { token, expirationTime }
+        // onAuthTokenRequired: async () => getGleanToken(),
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
